@@ -12,7 +12,7 @@ import (
 	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
 	"github.com/hajimehoshi/ebiten/v2/vector"
-	"github.com/setanarut/kamera/v2"
+	"github.com/lzurbriggen/kamera/v2"
 )
 
 var Controls = `
@@ -117,21 +117,20 @@ func (g *Game) Update() error {
 	TargetY += delta.Y
 
 	if ebiten.IsKeyPressed(ebiten.KeyQ) { // zoom out
-		if g.MainCamera.ZoomFactor > -4800 {
-			g.MainCamera.ZoomFactor -= g.ZoomSpeed
-		}
+		g.MainCamera.ScaleFactor -= g.ZoomSpeed
+		g.MainCamera.ScaleFactor = math.Max(g.MainCamera.ScaleFactor, 0.1)
 	}
 	if ebiten.IsKeyPressed(ebiten.KeyE) { // zoom in
-		if g.MainCamera.ZoomFactor < 4800 {
-			g.MainCamera.ZoomFactor += g.ZoomSpeed
-		}
+		g.MainCamera.ScaleFactor += g.ZoomSpeed
+		g.MainCamera.ScaleFactor = math.Min(g.MainCamera.ScaleFactor, 3)
+
 	}
 
 	if ebiten.IsKeyPressed(ebiten.KeyR) {
-		g.MainCamera.Rotation += 1
+		g.MainCamera.Rotation += math.Pi * 0.01
 	}
 	if ebiten.IsKeyPressed(ebiten.KeyF) {
-		g.MainCamera.Rotation -= 1
+		g.MainCamera.Rotation -= math.Pi * 0.01
 	}
 
 	if ebiten.IsKeyPressed(ebiten.KeyBackspace) {
@@ -176,7 +175,7 @@ func main() {
 
 	game := &Game{
 		ScreenSize:   &image.Point{int(w), int(h)},
-		ZoomSpeed:    3,
+		ZoomSpeed:    0.1,
 		GameObjects:  MakeObjects(enemyCount, enemySize),
 		MainCamera:   kamera.NewCamera(0, 0, float64(w), float64(h)),
 		CamSpeed:     5,

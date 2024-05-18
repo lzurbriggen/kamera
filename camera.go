@@ -11,8 +11,10 @@ import (
 // Camera object
 // Use the `Camera.LookAt()` function to align the center of the camera to the target.
 type Camera struct {
-	// Rotation and Zoom factor
-	Rotation, ZoomFactor float64
+	// Rotation in radians
+	Rotation float64
+	// Scale factor
+	ScaleFactor float64
 
 	// Interpolate camera movement
 	Lerp bool
@@ -34,7 +36,7 @@ func NewCamera(lookAtX, lookAtY, w, h float64) *Camera {
 		w:           w,
 		h:           h,
 		Rotation:    0,
-		ZoomFactor:  0,
+		ScaleFactor: 1,
 		drawOptions: &ebiten.DrawImageOptions{},
 		Lerp:        false,
 
@@ -116,17 +118,17 @@ func (cam *Camera) SetSize(w, h float64) {
 	cam.centerOffset = vec2{-(w * 0.5), -(h * 0.5)}
 }
 
-// Reset resets rotation and zoom factor to zero
+// Reset resets rotation and scale factor to zero
 func (cam *Camera) Reset() {
-	cam.Rotation, cam.ZoomFactor = 0.0, 0.0
+	cam.Rotation, cam.ScaleFactor = 0.0, 1.0
 }
 
 // String returns camera values as string
 func (cam *Camera) String() string {
 	x, y := cam.Target()
 	return fmt.Sprintf(
-		"TargetX: %.1f\nTargetY: %.1f\nCam Rotation: %.1f\nZoom factor: %.2f\nLerp: %v",
-		x, y, cam.Rotation, cam.ZoomFactor, cam.Lerp,
+		"TargetX: %.1f\nTargetY: %.1f\nCam Rotation: %.1f\nScale factor: %.2f\nLerp: %v",
+		x, y, cam.Rotation, cam.ScaleFactor, cam.Lerp,
 	)
 }
 
@@ -146,11 +148,11 @@ func (cam *Camera) ScreenToWorld(screenX, screenY int) (worldX float64, worldY f
 
 // ApplyCameraTransform applies geometric transformation to given geoM
 func (cam *Camera) ApplyCameraTransform(geoM *ebiten.GeoM) {
-	geoM.Translate(-cam.topLeft.X, -cam.topLeft.Y)                                               // camera movement
-	geoM.Translate(cam.centerOffset.X, cam.centerOffset.Y)                                       // rotate and scale from center.
-	geoM.Rotate(cam.Rotation * 2 * math.Pi / 360)                                                // rotate
-	geoM.Scale(math.Pow(1.01, float64(cam.ZoomFactor)), math.Pow(1.01, float64(cam.ZoomFactor))) // apply zoom factor
-	geoM.Translate(math.Abs(cam.centerOffset.X), math.Abs(cam.centerOffset.Y))                   // restore center translation
+	geoM.Translate(-cam.topLeft.X, -cam.topLeft.Y)                             // camera movement
+	geoM.Translate(cam.centerOffset.X, cam.centerOffset.Y)                     // rotate and scale from center.
+	geoM.Rotate(cam.Rotation)                                                  // rotate
+	geoM.Scale(cam.ScaleFactor, cam.ScaleFactor)                               // apply scale factor
+	geoM.Translate(math.Abs(cam.centerOffset.X), math.Abs(cam.centerOffset.Y)) // restore center translation
 }
 
 // Draw applies the Camera's geometric transformation then draws the object on the screen with drawing options.
@@ -205,7 +207,7 @@ func DefaultCameraShakeOptions() CameraShakeOptions {
 	return CameraShakeOptions{
 		ShakeSizeX:    150.0,
 		ShakeSizeY:    150.0,
-		MaxShakeAngle: 30,
+		MaxShakeAngle: 30. / 360. * math.Pi * 2.,
 		TimeScale:     16,
 		Decay:         0.333,
 	}
